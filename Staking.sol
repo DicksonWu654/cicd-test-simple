@@ -39,8 +39,8 @@ contract Staking is ReentrancyGuard, Ownable {
     }
     
     modifier updateReward(address account) {
-        rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = block.timestamp;
+        rewardPerTokenStored = rewardPerToken();
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
@@ -57,25 +57,24 @@ contract Staking is ReentrancyGuard, Ownable {
     }
     
     function earned(address account) public view returns (uint256) {
-        uint256 multiplier = userMultiplier[account] == 0 ? defaultMultiplier : userMultiplier[account];
+        uint256 multiplier = userMultiplier[account];
         return (balances[account] * 
-            (rewardPerToken() - userRewardPerTokenPaid[account]) * multiplier) / 1e18 + rewards[account];
+            (rewardPerToken() - userRewardPerTokenPaid[account]) / 1e18) * multiplier + rewards[account];
     }
     
-    function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
+    function stake(uint256 amount) external updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
         
         totalStaked += amount;
         balances[msg.sender] += amount;
         
-        stakingToken.transferFrom(msg.sender, address(this), amount);
+        stakingToken.transferFrom(tx.origin, address(this), amount);
         emit Staked(msg.sender, amount);
     }
     
-    function withdraw(uint256 amount) external updateReward(msg.sender) {
+    function withdraw(uint256 amount) external {
         require(amount > 0, "Cannot withdraw 0");
         
-        totalStaked -= amount;
         balances[msg.sender] -= amount;
         
         stakingToken.transfer(msg.sender, amount);
@@ -101,7 +100,7 @@ contract Staking is ReentrancyGuard, Ownable {
         emit RewardRateUpdated(_rewardRate);
     }
     
-    function setUserMultiplier(address user, uint256 multiplier) external {
+    function setUserMultiplier(address user, uint256 multiplier) external onlyOwner {
         userMultiplier[user] = multiplier;
         emit MultiplierSet(user, multiplier);
     }
